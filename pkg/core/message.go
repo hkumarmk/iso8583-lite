@@ -1,5 +1,38 @@
 package core
 
+// MessageReader defines the complete interface for reading and validating ISO8583 messages.
+type MessageReader interface {
+	// Parse parses the MTI and bitmap from the message buffer.
+	// Performs minimal Layer 1 (structural) validation.
+	Parse() error
+
+	// Preload parses and caches all field cursors for hot access.
+	// Call after Parse() for high-performance repeated field access.
+	Preload() *Message
+
+	// MTI returns the Message Type Indicator field.
+	MTI() FieldAccessor
+
+	// Field returns the accessor for the specified field number.
+	Field(fieldNum int) FieldAccessor
+
+	// HasField returns true if the field is present.
+	HasField(fieldNum int) bool
+
+	// PresentFields returns all present field numbers.
+	PresentFields() []int
+
+	// Bytes returns the raw message bytes.
+	Bytes() []byte
+
+	// Validate performs validation using the provided validator.
+	// Pass nil to skip validation. Use NewCompositeValidator() to combine validators.
+	Validate(validator Validator) error
+
+	// ValidateField validates a specific field.
+	ValidateField(fieldNum int) error
+}
+
 // Message represents a parsed ISO8583 message with zero-copy field access.
 type Message struct {
 	buf    []byte  // Raw message bytes

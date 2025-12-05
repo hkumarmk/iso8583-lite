@@ -2,6 +2,27 @@ package core
 
 import "encoding/binary"
 
+// BitmapAccessor defines the interface for reading and modifying bitmap state.
+type BitmapAccessor interface {
+	// IsSet returns true if the specified field number is set in the bitmap.
+	IsSet(fieldNum int) bool
+
+	// PresentFields returns a slice of all field numbers present in the bitmap.
+	PresentFields() []int
+
+	// IsExtended returns true if the secondary bitmap is present.
+	IsExtended() bool
+
+	// Set marks the specified field as present.
+	Set(fieldNum int)
+
+	// Unset marks the specified field as absent.
+	Unset(fieldNum int)
+
+	// Bytes returns the bitmap as a byte slice for serialization.
+	Bytes() []byte
+}
+
 // Bitmap represents the ISO8583 bitmap indicating which fields are present.
 type Bitmap struct {
 	primary   uint64
