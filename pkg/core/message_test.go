@@ -3,7 +3,37 @@ package core
 import (
 	"strings"
 	"testing"
+
+	"github.com/hkumarmk/iso8583-lite/pkg/spec"
 )
+
+// testSpec returns a minimal spec for testing
+func testSpec() *spec.Spec {
+	return &spec.Spec{
+		Name:    "Test Spec",
+		Version: "1.0",
+		Fields: map[int]*spec.FieldSpec{
+			2: {
+				Number:    2,
+				Name:      "PAN",
+				Type:      spec.FieldTypeLL,
+				MaxLength: 19,
+			},
+			3: {
+				Number: 3,
+				Name:   "Processing Code",
+				Type:   spec.FieldTypeFixed,
+				Length: 6,
+			},
+			4: {
+				Number: 4,
+				Name:   "Amount",
+				Type:   spec.FieldTypeFixed,
+				Length: 12,
+			},
+		},
+	}
+}
 
 func TestMessageParseErrors(t *testing.T) {
 	tests := []struct {
@@ -48,7 +78,7 @@ func TestMessageParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg := NewMessage(tt.data)
+			msg := NewMessage(tt.data, testSpec())
 			err := msg.Parse()
 
 			if err == nil {
@@ -65,13 +95,13 @@ func TestMessageParseErrors(t *testing.T) {
 }
 
 func TestMessageParseSuccess(t *testing.T) {
-	// Valid message with MTI and bitmap
+	// Valid message with MTI and bitmap (no fields set)
 	data := []byte{
 		0x30, 0x32, 0x30, 0x30, // MTI: 0200
-		0x70, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Primary bitmap
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Primary bitmap (no fields)
 	}
 
-	msg := NewMessage(data)
+	msg := NewMessage(data, testSpec())
 	err := msg.Parse()
 
 	if err != nil {

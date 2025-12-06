@@ -5,7 +5,42 @@ import (
 	"testing"
 
 	"github.com/hkumarmk/iso8583-lite/pkg/core"
+	"github.com/hkumarmk/iso8583-lite/pkg/spec"
 )
+
+// testSpec returns a minimal spec for testing
+func testSpec() *spec.Spec {
+	return &spec.Spec{
+		Name:    "Test Spec",
+		Version: "1.0",
+		Fields: map[int]*spec.FieldSpec{
+			2: {
+				Number:    2,
+				Name:      "PAN",
+				Type:      spec.FieldTypeLL,
+				MaxLength: 19,
+			},
+			3: {
+				Number: 3,
+				Name:   "Processing Code",
+				Type:   spec.FieldTypeFixed,
+				Length: 6,
+			},
+			4: {
+				Number: 4,
+				Name:   "Amount",
+				Type:   spec.FieldTypeFixed,
+				Length: 12,
+			},
+			11: {
+				Number: 11,
+				Name:   "STAN",
+				Type:   spec.FieldTypeFixed,
+				Length: 6,
+			},
+		},
+	}
+}
 
 func TestMessageFunctional(t *testing.T) {
 	// Test Message structure:
@@ -23,7 +58,7 @@ func TestMessageFunctional(t *testing.T) {
 	}
 
 	// Parse the message using high-level Message API
-	msg := core.NewMessage(msgBytes)
+	msg := core.NewMessage(msgBytes, testSpec())
 
 	// Parse MTI and bitmap
 	err = msg.Parse()
