@@ -22,20 +22,25 @@ func TestBCD_EncodeDecode(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Encode failed: %v", err)
 			}
+
 			if !bytes.Equal(enc, tc.bcd) {
 				t.Errorf("Encode: got %v, want %v", enc, tc.bcd)
 			}
+
 			dec, n, err := BCD.Decode(enc)
 			if err != nil {
 				t.Fatalf("Decode failed: %v", err)
 			}
+
 			if n != len(enc) {
 				t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
 			}
+
 			want := tc.ascii
 			if len(want)%2 != 0 {
 				want = "0" + want
 			}
+
 			if string(dec) != want {
 				t.Errorf("Decode: got %q, want %q", dec, want)
 			}

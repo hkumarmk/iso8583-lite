@@ -1,9 +1,19 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/hkumarmk/iso8583-lite/pkg/spec"
+)
+
+var (
+	ErrFieldNotDefined             = errors.New("field not defined in spec")
+	ErrOffsetExceedsBufferLen      = errors.New("offset exceeds buffer length")
+	ErrUnsupportedFieldType        = errors.New("unsupported field type in spec")
+	ErrInsufficientLengthIndicator = errors.New("insufficient data for length indicator")
+	ErrFieldLengthExceedsMax       = errors.New("field length exceeds max length")
+	ErrInvalidDigit                = errors.New("invalid digit in length indicator")
 )
 
 // Parser is a stateless field location calculator that uses a Spec.
@@ -29,15 +39,17 @@ func NewParser(s *spec.Spec) *Parser {
 // ParseField calculates the cursor for a field based on the spec.
 // Requires the buffer, field number, and starting offset.
 // Returns cursor and error if field cannot be parsed.
-func (p *Parser) ParseField(buf []byte, fieldNum int, offset int) (Cursor, error) {
+func (p *Parser) ParseField(buf []byte, fieldNum, offset int) (Cursor, error) {
 	fieldSpec, ok := p.spec.Fields[fieldNum]
 	if !ok {
-		return Cursor{}, fmt.Errorf("field %d not defined in spec", fieldNum)
+		return Cursor{}, fmt.Errorf("field %d: %w", fieldNum, ErrFieldNotDefined)
 	}
-
 	// Check if we have enough data
 	if offset >= len(buf) {
-		return Cursor{}, fmt.Errorf("field %d: offset %d exceeds buffer length %d", fieldNum, offset, len(buf))
+		return Cursor{}, fmt.Errorf(
+			"field %d: %w (offset %d, buffer length %d)",
+			fieldNum, ErrOffsetExceedsBufferLen, offset, len(buf),
+		)
 	}
 
 	// Parse based on field type
@@ -49,15 +61,16 @@ func (p *Parser) ParseField(buf []byte, fieldNum int, offset int) (Cursor, error
 	case spec.FieldTypeBitmap:
 		return p.parseBitmap(buf, fieldSpec, offset)
 	default:
-		return Cursor{}, fmt.Errorf("unsupported field type %v", fieldSpec.Type)
+		return Cursor{}, fmt.Errorf("%w: %v", ErrUnsupportedFieldType, fieldSpec.Type)
 	}
 }
 
 // parseFixed parses a fixed-length field.
 func (p *Parser) parseFixed(buf []byte, fieldSpec *spec.FieldSpec, offset int) (Cursor, error) {
 	if offset+fieldSpec.Length > len(buf) {
-		return Cursor{}, fmt.Errorf("field %d (%s): expected %d bytes at offset %d, buffer has %d bytes",
-			fieldSpec.Number, fieldSpec.Name, fieldSpec.Length, offset, len(buf))
+		return Cursor{}, fmt.Errorf(
+			"field %d (%s): expected %d bytes for fixed field at offset %d, buffer has %d bytes: %w",
+			fieldSpec.Number, fieldSpec.Name, fieldSpec.Length, offset, len(buf), ErrOffsetExceedsBufferLen)
 	}
 
 	return Cursor{
@@ -72,22 +85,24 @@ func (p *Parser) parseVariable(buf []byte, fieldSpec *spec.FieldSpec, offset int
 
 	// Check if we have enough bytes for the length indicator
 	if offset+lenDigits > len(buf) {
-		return Cursor{}, fmt.Errorf("field %d (%s): expected %d bytes for length indicator at offset %d, buffer has %d bytes",
-			fieldSpec.Number, fieldSpec.Name, lenDigits, offset, len(buf))
+		return Cursor{}, fmt.Errorf(
+			"field %d (%s): expected %d bytes for length indicator at offset %d, buffer has %d bytes: %w",
+			fieldSpec.Number, fieldSpec.Name, lenDigits, offset, len(buf), ErrInsufficientLengthIndicator)
 	}
 
 	// Parse length indicator
 	lenBytes := buf[offset : offset+lenDigits]
+
 	fieldLen, err := parseInt(lenBytes)
 	if err != nil {
 		return Cursor{}, fmt.Errorf("field %d (%s): invalid length indicator %q: %w",
 			fieldSpec.Number, fieldSpec.Name, string(lenBytes), err)
 	}
-
 	// Validate field length
 	if fieldLen > fieldSpec.MaxLength {
-		return Cursor{}, fmt.Errorf("field %d (%s): length %d exceeds max length %d",
-			fieldSpec.Number, fieldSpec.Name, fieldLen, fieldSpec.MaxLength)
+		return Cursor{}, fmt.Errorf(
+			"field %d (%s): length %d exceeds max length %d: %w",
+			fieldSpec.Number, fieldSpec.Name, fieldLen, fieldSpec.MaxLength, ErrFieldLengthExceedsMax)
 	}
 
 	dataStart := offset + lenDigits
@@ -95,8 +110,9 @@ func (p *Parser) parseVariable(buf []byte, fieldSpec *spec.FieldSpec, offset int
 
 	// Check if we have enough data
 	if dataEnd > len(buf) {
-		return Cursor{}, fmt.Errorf("field %d (%s): expected %d bytes of data at offset %d, buffer has %d bytes",
-			fieldSpec.Number, fieldSpec.Name, fieldLen, dataStart, len(buf))
+		return Cursor{}, fmt.Errorf(
+			"field %d (%s): expected %d bytes of data at offset %d, buffer has %d bytes: %w",
+			fieldSpec.Number, fieldSpec.Name, fieldLen, dataStart, len(buf), ErrOffsetExceedsBufferLen)
 	}
 
 	return Cursor{
@@ -108,8 +124,9 @@ func (p *Parser) parseVariable(buf []byte, fieldSpec *spec.FieldSpec, offset int
 // parseBitmap parses a bitmap field (8 or 16 bytes).
 func (p *Parser) parseBitmap(buf []byte, fieldSpec *spec.FieldSpec, offset int) (Cursor, error) {
 	if offset+fieldSpec.Length > len(buf) {
-		return Cursor{}, fmt.Errorf("field %d (%s): expected %d bytes at offset %d, buffer has %d bytes",
-			fieldSpec.Number, fieldSpec.Name, fieldSpec.Length, offset, len(buf))
+		return Cursor{}, fmt.Errorf(
+			"field %d (%s): expected %d bytes at offset %d, buffer has %d bytes: %w",
+			fieldSpec.Number, fieldSpec.Name, fieldSpec.Length, offset, len(buf), ErrOffsetExceedsBufferLen)
 	}
 
 	return Cursor{
@@ -119,13 +136,18 @@ func (p *Parser) parseBitmap(buf []byte, fieldSpec *spec.FieldSpec, offset int) 
 }
 
 // parseInt parses a numeric byte slice into an integer.
+const decimalBase = 10
+
 func parseInt(b []byte) (int, error) {
 	result := 0
+
 	for _, c := range b {
 		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("invalid digit %q", c)
+			return 0, fmt.Errorf("%w: %q", ErrInvalidDigit, c)
 		}
-		result = result*10 + int(c-'0')
+
+		result = result*decimalBase + int(c-'0')
 	}
+
 	return result, nil
 }

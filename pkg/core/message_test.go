@@ -7,7 +7,7 @@ import (
 	"github.com/hkumarmk/iso8583-lite/pkg/spec"
 )
 
-// testSpec returns a minimal spec for testing
+// testSpec returns a minimal spec for testing.
 func testSpec() *spec.Spec {
 	return &spec.Spec{
 		Name:    "Test Spec",
@@ -79,8 +79,8 @@ func TestMessageParseErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msg := NewMessage(tt.data, testSpec())
-			err := msg.Parse()
 
+			err := msg.Parse()
 			if err == nil {
 				t.Fatal("Expected error but got nil")
 			}
@@ -102,8 +102,8 @@ func TestMessageParseSuccess(t *testing.T) {
 	}
 
 	msg := NewMessage(data, testSpec())
-	err := msg.Parse()
 
+	err := msg.Parse()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

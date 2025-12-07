@@ -21,16 +21,20 @@ func TestHexEncoder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Encode error: %v", err)
 			}
+
 			if string(enc) != tc.out {
 				t.Errorf("Encode mismatch: got %q, want %q", enc, tc.out)
 			}
+
 			dec, n, err := Hex.Decode(enc)
 			if err != nil {
 				t.Fatalf("Decode error: %v", err)
 			}
+
 			if n != len(enc) {
 				t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
 			}
+
 			if !bytes.Equal(dec, tc.in) {
 				t.Errorf("Decode mismatch: got %v, want %v", dec, tc.in)
 			}

@@ -37,6 +37,7 @@ func TestTLVEncoder_EncodeDecode_Simple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Encode failed: %v", err)
 	}
+
 	if !bytes.Equal(enc, data) {
 		t.Errorf("Encode mismatch: got %v, want %v", enc, data)
 	}
@@ -45,9 +46,11 @@ func TestTLVEncoder_EncodeDecode_Simple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Decode failed: %v", err)
 	}
+
 	if n != len(enc) {
 		t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
 	}
+
 	if !bytes.Equal(dec, data) {
 		t.Errorf("Decode mismatch: got %v, want %v", dec, data)
 	}
@@ -72,7 +75,6 @@ func TestTLVEncoder_TableDriven(t *testing.T) {
 				0x9F, 0x37, 0x04, 0x6B, 0x1A, 0x2C, 0x3D,
 			},
 		},
-
 		{
 			name: "DE55 sample-2",
 			data: []byte{
@@ -80,7 +82,8 @@ func TestTLVEncoder_TableDriven(t *testing.T) {
 				0x9A, 0x03, 0x24, 0x10, 0x03,
 				0x5F, 0x2A, 0x02, 0x07, 0x10,
 				0x9F, 0x02, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-				0x9F, 0x10, 0x12, 0x01, 0x10, 0x20, 0x80, 0x03, 0x24, 0x20, 0x00, 0x96, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+				0x9F, 0x10, 0x12, 0x01, 0x10, 0x20, 0x80, 0x03, 0x24, 0x20, 0x00,
+				0x96, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
 				0x9F, 0x1A, 0x02, 0x07, 0x10,
 				0x9F, 0x26, 0x08, 0xA3, 0xFD, 0xE2, 0xBF, 0x27, 0xF3, 0x98, 0x39,
 				0x9F, 0x27, 0x01, 0x00,
@@ -95,16 +98,20 @@ func TestTLVEncoder_TableDriven(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Encode failed: %v", err)
 			}
+
 			if !bytes.Equal(enc, tc.data) {
 				t.Errorf("Encode mismatch: got %v, want %v", enc, tc.data)
 			}
+
 			dec, n, err := TLV.Decode(enc)
 			if err != nil {
 				t.Fatalf("Decode failed: %v", err)
 			}
+
 			if n != len(enc) {
 				t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
 			}
+
 			if !bytes.Equal(dec, tc.data) {
 				t.Errorf("Decode mismatch: got %v, want %v", dec, tc.data)
 			}
@@ -117,16 +124,20 @@ func TestTLVEncoder_Empty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Encode failed for empty: %v", err)
 	}
+
 	if len(enc) != 0 {
 		t.Errorf("Encode: expected empty, got %v", enc)
 	}
+
 	dec, n, err := TLV.Decode(enc)
 	if err != nil {
 		t.Fatalf("Decode failed for empty: %v", err)
 	}
+
 	if n != 0 {
 		t.Errorf("Decode: expected 0 bytes read, got %d", n)
 	}
+
 	if len(dec) != 0 {
 		t.Errorf("Decode: expected empty, got %v", dec)
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/hkumarmk/iso8583-lite/pkg/spec"
 )
 
-// testSpec returns a minimal spec for testing
+// testSpec returns a minimal spec for testing.
 func testSpec() *spec.Spec {
 	return &spec.Spec{
 		Name:    "Test Spec",
@@ -50,8 +50,9 @@ func TestMessageFunctional(t *testing.T) {
 	// Field 3: Processing Code "000000"
 	// Field 4: Amount "000000001000"
 	// Field 11: STAN "000001"
+	msgHex := "303230307020000000000000313631323334353637383930313233343536" +
+		"303030303030303030303030303031303030303030303031"
 
-	msgHex := "303230307020000000000000313631323334353637383930313233343536303030303030303030303030303031303030303030303031"
 	msgBytes, err := hex.DecodeString(msgHex)
 	if err != nil {
 		t.Fatalf("Failed to decode test message: %v", err)
@@ -81,21 +82,26 @@ func TestMessageFunctional(t *testing.T) {
 	if !msg.HasField(2) {
 		t.Error("Expected field 2 to be present")
 	}
+
 	if !msg.HasField(3) {
 		t.Error("Expected field 3 to be present")
 	}
+
 	if !msg.HasField(4) {
 		t.Error("Expected field 4 to be present")
 	}
+
 	if !msg.HasField(11) {
 		t.Error("Expected field 11 to be present")
 	}
+
 	if msg.HasField(5) {
 		t.Error("Expected field 5 to NOT be present")
 	}
 
 	// Test PresentFields
 	presentFields := msg.PresentFields()
+
 	expectedFields := []int{0, 2, 3, 4, 11}
 	if len(presentFields) != len(expectedFields) {
 		t.Errorf("Expected %d present fields, got %d", len(expectedFields), len(presentFields))

@@ -1,10 +1,12 @@
 package core
 
+import "fmt"
+
 // Validator defines the interface for ISO8583 message validation.
 // Implementations can validate at different layers:
 // - Layer 1: Structural validation (field parsing, boundaries)
 // - Layer 1.5: Format validation (data types, patterns, mandatory fields)
-// - Layer 2: Business validation (Luhn checks, expiration, limits)
+// - Layer 2: Business validation (Luhn checks, expiration, limits).
 type Validator interface {
 	// Validate checks the message and returns error if validation fails.
 	// The error should be descriptive and indicate which field/rule failed.
@@ -18,7 +20,7 @@ type MessageBuilder interface {
 	SetMTI(mti string) MessageBuilder
 
 	// SetField sets a field value.
-	SetField(fieldNum int, value interface{}) MessageBuilder
+	SetField(fieldNum int, value any) MessageBuilder
 
 	// SetString sets a field from a string value.
 	SetString(fieldNum int, value string) MessageBuilder
@@ -43,6 +45,7 @@ type MessageBuilder interface {
 // ValidatorFunc is a function adapter for the Validator interface.
 type ValidatorFunc func(MessageReader) error
 
+// Validate calls the underlying function.
 func (f ValidatorFunc) Validate(msg MessageReader) error {
 	return f(msg)
 }
@@ -53,35 +56,42 @@ type CompositeValidator struct {
 	validators []Validator
 }
 
+// NewCompositeValidator creates a composite validator from multiple validators.
 func NewCompositeValidator(validators ...Validator) *CompositeValidator {
 	return &CompositeValidator{
 		validators: validators,
 	}
 }
 
+// Validate runs all validators in sequence.
+//
+//nolint:wrapcheck // Allow direct error return from validators
 func (c *CompositeValidator) Validate(msg MessageReader) error {
 	for _, v := range c.validators {
 		if err := v.Validate(msg); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 // StructuralValidator validates message structure (Layer 1).
 // - All fields can be parsed according to spec
 // - Field boundaries are valid
-// - Variable length indicators are correct
+// - Variable length indicators are correct.
 type StructuralValidator struct {
 	// Spec defines field formats for structural validation
 	// TODO: Will be implemented when Spec is available
 }
 
+// NewStructuralValidator creates a new structural validator.
 func NewStructuralValidator() *StructuralValidator {
 	return &StructuralValidator{}
 }
 
-func (v *StructuralValidator) Validate(msg MessageReader) error {
+// Validate performs structural validation.
+func (v *StructuralValidator) Validate(_ MessageReader) error {
 	// TODO: Implement structural validation
 	// This will parse all fields and catch:
 	// - Truncated fields
@@ -94,16 +104,18 @@ func (v *StructuralValidator) Validate(msg MessageReader) error {
 // - Mandatory fields present
 // - Data types correct (numeric/alpha/alphanumeric)
 // - Length constraints satisfied
-// - Date/time patterns valid
+// - Date/time patterns valid.
 type FormatValidator struct {
 	// TODO: Add spec-based validation rules
 }
 
+// NewFormatValidator creates a new format validator.
 func NewFormatValidator() *FormatValidator {
 	return &FormatValidator{}
 }
 
-func (v *FormatValidator) Validate(msg MessageReader) error {
+// Validate performs format validation.
+func (v *FormatValidator) Validate(_ MessageReader) error {
 	// TODO: Implement format validation
 	// - Check mandatory fields
 	// - Validate data types per spec
@@ -123,18 +135,21 @@ type ValidationRule interface {
 	Check(msg MessageReader) error
 }
 
+// NewBusinessValidator creates a business validator with given rules.
 func NewBusinessValidator(rules ...ValidationRule) *BusinessValidator {
 	return &BusinessValidator{
 		rules: rules,
 	}
 }
 
+// Validate performs business rule validations.
 func (v *BusinessValidator) Validate(msg MessageReader) error {
 	for _, rule := range v.rules {
 		if err := rule.Check(msg); err != nil {
-			return err
+			return fmt.Errorf("business rule validation failed: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -145,16 +160,19 @@ type RequiredFieldsRule struct {
 	fields []int
 }
 
+// NewRequiredFieldsRule creates a rule for required fields.
 func NewRequiredFieldsRule(fields ...int) *RequiredFieldsRule {
 	return &RequiredFieldsRule{fields: fields}
 }
 
+// Check validates that all required fields are present.
 func (r *RequiredFieldsRule) Check(msg MessageReader) error {
 	for _, fieldNum := range r.fields {
 		if !msg.HasField(fieldNum) {
 			return ErrMissingRequiredField(fieldNum)
 		}
 	}
+
 	return nil
 }
 
@@ -163,10 +181,12 @@ type NumericFieldRule struct {
 	fields []int
 }
 
+// NewNumericFieldRule creates a rule for numeric fields.
 func NewNumericFieldRule(fields ...int) *NumericFieldRule {
 	return &NumericFieldRule{fields: fields}
 }
 
+// Check validates that specified fields are numeric.
 func (r *NumericFieldRule) Check(msg MessageReader) error {
 	for _, fieldNum := range r.fields {
 		if !msg.HasField(fieldNum) {
@@ -180,6 +200,7 @@ func (r *NumericFieldRule) Check(msg MessageReader) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -188,10 +209,12 @@ type LuhnCheckRule struct {
 	fieldNum int
 }
 
+// NewLuhnCheckRule creates a rule for Luhn check validation on a field.
 func NewLuhnCheckRule(fieldNum int) *LuhnCheckRule {
 	return &LuhnCheckRule{fieldNum: fieldNum}
 }
 
+// Check performs the Luhn check validation.
 func (r *LuhnCheckRule) Check(msg MessageReader) error {
 	if !msg.HasField(r.fieldNum) {
 		return nil // Skip if field not present
@@ -201,13 +224,20 @@ func (r *LuhnCheckRule) Check(msg MessageReader) error {
 	if !luhnCheck(pan) {
 		return ErrInvalidPANChecksum(r.fieldNum)
 	}
+
 	return nil
 }
+
+const (
+	luhnParityDivisor    = 2
+	luhnDoubleSubtractor = 9
+)
 
 // luhnCheck validates a number using the Luhn algorithm.
 func luhnCheck(number string) bool {
 	var sum int
-	parity := len(number) % 2
+
+	parity := len(number) % luhnParityDivisor
 
 	for i, digit := range number {
 		if digit < '0' || digit > '9' {
@@ -215,12 +245,13 @@ func luhnCheck(number string) bool {
 		}
 
 		d := int(digit - '0')
-		if i%2 == parity {
-			d *= 2
-			if d > 9 {
-				d -= 9
+		if i%luhnParityDivisor == parity {
+			d *= luhnParityDivisor
+			if d > luhnDoubleSubtractor {
+				d -= luhnDoubleSubtractor
 			}
 		}
+
 		sum += d
 	}
 
@@ -234,6 +265,7 @@ type FieldLengthRule struct {
 	maxLen   int
 }
 
+// NewFieldLengthRule creates a rule for field length constraints.
 func NewFieldLengthRule(fieldNum, minLen, maxLen int) *FieldLengthRule {
 	return &FieldLengthRule{
 		fieldNum: fieldNum,
@@ -242,6 +274,7 @@ func NewFieldLengthRule(fieldNum, minLen, maxLen int) *FieldLengthRule {
 	}
 }
 
+// Check validates the field length constraints.
 func (r *FieldLengthRule) Check(msg MessageReader) error {
 	if !msg.HasField(r.fieldNum) {
 		return nil
@@ -251,5 +284,6 @@ func (r *FieldLengthRule) Check(msg MessageReader) error {
 	if length < r.minLen || length > r.maxLen {
 		return ErrInvalidFieldLength(r.fieldNum, r.minLen, r.maxLen, length)
 	}
+
 	return nil
 }
