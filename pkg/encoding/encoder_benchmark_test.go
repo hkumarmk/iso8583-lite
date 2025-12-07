@@ -123,6 +123,7 @@ func BenchmarkASCIIDecode(b *testing.B) {
 }
 
 func BenchmarkTLVEncode(b *testing.B) {
+	b.ReportAllocs()
 	enc := &tlvEncoder{}
 	for i := 0; i < b.N; i++ {
 		_, err := enc.Encode(tlvTestData)
@@ -133,6 +134,7 @@ func BenchmarkTLVEncode(b *testing.B) {
 }
 
 func BenchmarkTLVDecode(b *testing.B) {
+	b.ReportAllocs()
 	enc := &tlvEncoder{}
 	data, _ := enc.Encode(tlvTestData)
 	for i := 0; i < b.N; i++ {
