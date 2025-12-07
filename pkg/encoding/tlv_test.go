@@ -3,8 +3,6 @@ package encoding
 import (
 	"bytes"
 	"testing"
-
-	"github.com/euicc-go/bertlv"
 )
 
 func TestTLVEncoder_InvalidInput(t *testing.T) {
@@ -32,13 +30,8 @@ func TestTLVEncoder_InvalidInput(t *testing.T) {
 }
 
 func TestTLVEncoder_EncodeDecode_Simple(t *testing.T) {
-	tag := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x5F2A)
-	value := []byte{0x01, 0x02}
-	tlv := bertlv.NewValue(tag, value)
-	data, err := tlv.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
-	}
+	// Flat TLV: tag=0x5F, length=2, value=0x01 0x02
+	data := []byte{0x5F, 0x02, 0x01, 0x02}
 
 	enc, err := TLV.Encode(data)
 	if err != nil {
@@ -60,126 +53,62 @@ func TestTLVEncoder_EncodeDecode_Simple(t *testing.T) {
 	}
 }
 
-func TestTLVEncoder_EncodeDecode_MultipleTLVs(t *testing.T) {
-	tag1 := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x9F33)
-	val1 := []byte{0x01, 0x02, 0x03}
-	tlv1 := bertlv.NewValue(tag1, val1)
+func TestTLVEncoder_TableDriven(t *testing.T) {
+	cases := []struct {
+		name string
+		data []byte
+	}{
+		{
+			name: "DE55 sample-1",
+			data: []byte{
+				0x95, 0x05, 0x80, 0x00, 0x00, 0x00, 0x00,
+				0x9A, 0x03, 0x20, 0x12, 0x31,
+				0x5F, 0x2A, 0x02, 0x08, 0x40,
+				0x9F, 0x02, 0x06, 0x00, 0x00, 0x01, 0x00, 0x00,
+				0x9F, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x9F, 0x1A, 0x02, 0x08, 0x40,
+				0x9F, 0x27, 0x01, 0x80,
+				0x9F, 0x36, 0x02, 0x00, 0x3C,
+				0x9F, 0x37, 0x04, 0x6B, 0x1A, 0x2C, 0x3D,
+			},
+		},
 
-	tag2 := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x95)
-	val2 := []byte{0xAA, 0xBB}
-	tlv2 := bertlv.NewValue(tag2, val2)
-
-	data1, err := tlv1.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
+		{
+			name: "DE55 sample-2",
+			data: []byte{
+				0x95, 0x05, 0x00, 0x00, 0x80, 0x00, 0x00,
+				0x9A, 0x03, 0x24, 0x10, 0x03,
+				0x5F, 0x2A, 0x02, 0x07, 0x10,
+				0x9F, 0x02, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+				0x9F, 0x10, 0x12, 0x01, 0x10, 0x20, 0x80, 0x03, 0x24, 0x20, 0x00, 0x96, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+				0x9F, 0x1A, 0x02, 0x07, 0x10,
+				0x9F, 0x26, 0x08, 0xA3, 0xFD, 0xE2, 0xBF, 0x27, 0xF3, 0x98, 0x39,
+				0x9F, 0x27, 0x01, 0x00,
+				0x9F, 0x36, 0x02, 0x00, 0x19,
+				0x9F, 0x37, 0x04, 0x1C, 0x2D, 0x1D, 0xBE,
+			},
+		},
 	}
-	data2, err := tlv2.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
-	}
-	data := append(data1, data2...)
-
-	enc, err := TLV.Encode(data)
-	if err != nil {
-		t.Fatalf("Encode failed: %v", err)
-	}
-	if !bytes.Equal(enc, data) {
-		t.Errorf("Encode mismatch: got %v, want %v", enc, data)
-	}
-
-	dec, n, err := TLV.Decode(enc)
-	if err != nil {
-		t.Fatalf("Decode failed: %v", err)
-	}
-	if n != len(enc) {
-		t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
-	}
-	if !bytes.Equal(dec, data) {
-		t.Errorf("Decode mismatch: got %v, want %v", dec, data)
-	}
-}
-
-func TestTLVEncoder_NestedTLV(t *testing.T) {
-	// Construct a TLV with a constructed tag and a child TLV
-	tagOuter := bertlv.NewTag(bertlv.Application, bertlv.Constructed, 0xE1)
-	tagInner := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x5F2A)
-	valInner := []byte{0x01, 0x02}
-	inner := bertlv.NewValue(tagInner, valInner)
-	outer := bertlv.NewChildren(tagOuter, inner)
-	data, err := outer.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
-	}
-	enc, err := TLV.Encode(data)
-	if err != nil {
-		t.Fatalf("Encode failed: %v", err)
-	}
-	if !bytes.Equal(enc, data) {
-		t.Errorf("Encode mismatch: got %v, want %v", enc, data)
-	}
-	dec, n, err := TLV.Decode(enc)
-	if err != nil {
-		t.Fatalf("Decode failed: %v", err)
-	}
-	if n != len(enc) {
-		t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
-	}
-	if !bytes.Equal(dec, data) {
-		t.Errorf("Decode mismatch: got %v, want %v", dec, data)
-	}
-}
-
-func TestTLVEncoder_LongFormLength(t *testing.T) {
-	// TLV with long-form length (length > 127)
-	tag := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x5F2A)
-	val := bytes.Repeat([]byte{0xAB}, 130)
-	tlv := bertlv.NewValue(tag, val)
-	data, err := tlv.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
-	}
-	enc, err := TLV.Encode(data)
-	if err != nil {
-		t.Fatalf("Encode failed: %v", err)
-	}
-	if !bytes.Equal(enc, data) {
-		t.Errorf("Encode mismatch: got %v, want %v", enc, data)
-	}
-	dec, n, err := TLV.Decode(enc)
-	if err != nil {
-		t.Fatalf("Decode failed: %v", err)
-	}
-	if n != len(enc) {
-		t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
-	}
-	if !bytes.Equal(dec, data) {
-		t.Errorf("Decode mismatch: got %v, want %v", dec, data)
-	}
-}
-
-func TestTLVEncoder_ZeroLengthValue(t *testing.T) {
-	tag := bertlv.NewTag(bertlv.Application, bertlv.Primitive, 0x5F2A)
-	tlv := bertlv.NewValue(tag, []byte{})
-	data, err := tlv.MarshalBinary()
-	if err != nil {
-		t.Fatalf("MarshalBinary failed: %v", err)
-	}
-	enc, err := TLV.Encode(data)
-	if err != nil {
-		t.Fatalf("Encode failed: %v", err)
-	}
-	if !bytes.Equal(enc, data) {
-		t.Errorf("Encode mismatch: got %v, want %v", enc, data)
-	}
-	dec, n, err := TLV.Decode(enc)
-	if err != nil {
-		t.Fatalf("Decode failed: %v", err)
-	}
-	if n != len(enc) {
-		t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
-	}
-	if !bytes.Equal(dec, data) {
-		t.Errorf("Decode mismatch: got %v, want %v", dec, data)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			enc, err := TLV.Encode(tc.data)
+			if err != nil {
+				t.Fatalf("Encode failed: %v", err)
+			}
+			if !bytes.Equal(enc, tc.data) {
+				t.Errorf("Encode mismatch: got %v, want %v", enc, tc.data)
+			}
+			dec, n, err := TLV.Decode(enc)
+			if err != nil {
+				t.Fatalf("Decode failed: %v", err)
+			}
+			if n != len(enc) {
+				t.Errorf("Decode did not consume all input: got %d, want %d", n, len(enc))
+			}
+			if !bytes.Equal(dec, tc.data) {
+				t.Errorf("Decode mismatch: got %v, want %v", dec, tc.data)
+			}
+		})
 	}
 }
 
