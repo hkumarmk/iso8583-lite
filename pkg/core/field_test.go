@@ -24,6 +24,7 @@ func TestFieldAccessors(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
+
 	if val != 123456 {
 		t.Errorf("Expected 123456, got %d", val)
 	}
@@ -47,9 +48,11 @@ func TestFieldAccessors(t *testing.T) {
 	if emptyField.Exists() {
 		t.Error("Expected field to not exist")
 	}
+
 	if emptyField.String() != "" {
 		t.Error("Expected empty string for non-existent field")
 	}
+
 	if emptyField.Int() != 0 {
 		t.Error("Expected 0 for non-existent field")
 	}

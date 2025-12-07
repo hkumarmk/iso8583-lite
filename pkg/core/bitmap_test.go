@@ -15,12 +15,15 @@ func TestBitmap(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+
 		if bytesRead != 8 {
 			t.Errorf("expected 8 bytes read, got %d", bytesRead)
 		}
+
 		if !bm.IsSet(2) {
 			t.Error("expected field 2 to be set")
 		}
+
 		if bm.IsSet(3) {
 			t.Error("expected field 3 to not be set")
 		}
@@ -38,12 +41,15 @@ func TestBitmap(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
+
 		if bytesRead != 16 {
 			t.Errorf("expected 16 bytes read, got %d", bytesRead)
 		}
+
 		if !bm.IsSet(1) {
 			t.Error("expected field 1 to be set")
 		}
+
 		if !bm.IsSet(66) {
 			t.Error("expected field 66 to be set")
 		}
@@ -64,21 +70,25 @@ func TestBitmap(t *testing.T) {
 
 		// Set field 2
 		bm.Set(2)
+
 		if !bm.IsSet(2) {
 			t.Error("expected field 2 to be set")
 		}
 
 		// Unset field 2
 		bm.Unset(2)
+
 		if bm.IsSet(2) {
 			t.Error("expected field 2 to be unset")
 		}
 
 		// Set field 65 (should automatically set field 1)
 		bm.Set(65)
+
 		if !bm.IsSet(1) {
 			t.Error("expected field 1 to be set when field 65 is set")
 		}
+
 		if !bm.IsSet(65) {
 			t.Error("expected field 65 to be set")
 		}
@@ -114,6 +124,7 @@ func TestBitmap(t *testing.T) {
 		if len(bytes) != 8 {
 			t.Errorf("expected 8 bytes, got %d", len(bytes))
 		}
+
 		if bytes[0] != 0x40 {
 			t.Errorf("expected first byte 0x40, got 0x%02x", bytes[0])
 		}

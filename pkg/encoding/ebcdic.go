@@ -9,7 +9,8 @@ import "errors"
 var (
 	_ Encoder = (*ebcdic037Encoder)(nil)
 
-	// EBCDIC037 is a stateless, reusable encoder for EBCDIC (CP037/IBM037). Safe for concurrent use.
+	//nolint:gochecknoglobals // EBCDIC037 is a stateless, reusable encoder for EBCDIC (CP037/IBM037).
+	// EBCDIC037 Encoder converts between ASCII and EBCDIC (CP037/IBM037).
 	EBCDIC037 Encoder = ebcdic037Encoder{}
 )
 
@@ -24,6 +25,8 @@ var (
 type ebcdic037Encoder struct{}
 
 // ebcdic037ToASCII and asciiToEBCDIC are lookup tables for fast conversion.
+//
+//nolint:dupl,gochecknoglobals // These tables are standard and widely used.
 var ebcdic037ToASCII = [256]byte{
 	// EBCDIC (CP037) to ASCII lookup table
 	0x00, 0x01, 0x02, 0x03, 0x9C, 0x09, 0x86, 0x7F, 0x97, 0x8D, 0x8E, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -43,6 +46,8 @@ var ebcdic037ToASCII = [256]byte{
 	0x5C, 0xF7, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0xB2, 0xD4, 0xD6, 0xD2, 0xD3, 0xD5,
 	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0xB3, 0xDB, 0xDC, 0xDA, 0x9F, 0x9B,
 }
+
+//nolint:dupl,gochecknoglobals // These tables are standard and widely used.
 var asciiToEBCDIC037 = [256]byte{
 	// ASCII to EBCDIC (CP037) lookup table
 	0x00, 0x01, 0x02, 0x03, 0x37, 0x2D, 0x2E, 0x2F, 0x16, 0x05, 0x25, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -63,16 +68,20 @@ var asciiToEBCDIC037 = [256]byte{
 	0xED, 0xEE, 0xEF, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0xAA, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5,
 }
 
+const asciiMax = 0x7F
+
 // Encode converts ASCII bytes to EBCDIC (CP037/IBM037).
 // Returns a new slice, or error if non-ASCII bytes are found.
 func (ebcdic037Encoder) Encode(src []byte) ([]byte, error) {
 	out := make([]byte, len(src))
 	for i, b := range src {
-		if b > 0x7F {
+		if b > asciiMax {
 			return nil, ErrInvalidASCII
 		}
+
 		out[i] = asciiToEBCDIC037[b]
 	}
+
 	return out, nil
 }
 
@@ -83,6 +92,7 @@ func (ebcdic037Encoder) Decode(src []byte) ([]byte, int, error) {
 	for i, b := range src {
 		out[i] = ebcdic037ToASCII[b]
 	}
+
 	return out, len(src), nil
 }
 

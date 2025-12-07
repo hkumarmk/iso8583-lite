@@ -13,9 +13,11 @@ func TestValidatorFunc(t *testing.T) {
 	called := false
 	validator := ValidatorFunc(func(msg MessageReader) error {
 		called = true
+
 		if msg.MTI().String() != "0200" {
 			t.Errorf("Expected MTI 0200, got %s", msg.MTI().String())
 		}
+
 		return nil
 	})
 
@@ -36,18 +38,21 @@ func TestCompositeValidator(t *testing.T) {
 
 	order := []int{}
 
-	v1 := ValidatorFunc(func(msg MessageReader) error {
+	v1 := ValidatorFunc(func(_ MessageReader) error {
 		order = append(order, 1)
+
 		return nil
 	})
 
-	v2 := ValidatorFunc(func(msg MessageReader) error {
+	v2 := ValidatorFunc(func(_ MessageReader) error {
 		order = append(order, 2)
+
 		return nil
 	})
 
-	v3 := ValidatorFunc(func(msg MessageReader) error {
+	v3 := ValidatorFunc(func(_ MessageReader) error {
 		order = append(order, 3)
+
 		return nil
 	})
 
@@ -68,16 +73,17 @@ func TestCompositeValidatorStopsOnError(t *testing.T) {
 		t.Fatalf("Parse failed: %v", err)
 	}
 
-	v1 := ValidatorFunc(func(msg MessageReader) error {
+	v1 := ValidatorFunc(func(_ MessageReader) error {
 		return nil // Pass
 	})
 
-	v2 := ValidatorFunc(func(msg MessageReader) error {
+	v2 := ValidatorFunc(func(_ MessageReader) error {
 		return ErrMissingRequiredField(2) // Fail
 	})
 
-	v3 := ValidatorFunc(func(msg MessageReader) error {
+	v3 := ValidatorFunc(func(_ MessageReader) error {
 		t.Error("Should not reach validator 3")
+
 		return nil
 	})
 
@@ -110,7 +116,7 @@ func TestValidateBeforeParse(t *testing.T) {
 	msg := NewMessage([]byte("0200B220000000000000"), testSpec())
 	// Don't call Parse()
 
-	validator := ValidatorFunc(func(msg MessageReader) error {
+	validator := ValidatorFunc(func(_ MessageReader) error {
 		return nil
 	})
 

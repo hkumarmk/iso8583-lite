@@ -19,7 +19,7 @@ var (
 
 func BenchmarkEBCDICEncode(b *testing.B) {
 	enc := ebcdic037Encoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(ebcdicTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -29,8 +29,9 @@ func BenchmarkEBCDICEncode(b *testing.B) {
 
 func BenchmarkEBCDICDecode(b *testing.B) {
 	enc := ebcdic037Encoder{}
+
 	data, _ := enc.Encode(ebcdicTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)
@@ -40,7 +41,7 @@ func BenchmarkEBCDICDecode(b *testing.B) {
 
 func BenchmarkBinaryEncode(b *testing.B) {
 	enc := &binaryEncoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(binaryTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -50,8 +51,9 @@ func BenchmarkBinaryEncode(b *testing.B) {
 
 func BenchmarkBinaryDecode(b *testing.B) {
 	enc := &binaryEncoder{}
+
 	data, _ := enc.Encode(binaryTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)
@@ -61,7 +63,7 @@ func BenchmarkBinaryDecode(b *testing.B) {
 
 func BenchmarkBCDEncode(b *testing.B) {
 	enc := &bcdEncoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(bcdTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -71,8 +73,9 @@ func BenchmarkBCDEncode(b *testing.B) {
 
 func BenchmarkBCDDecode(b *testing.B) {
 	enc := &bcdEncoder{}
+
 	data, _ := enc.Encode(bcdTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)
@@ -82,7 +85,7 @@ func BenchmarkBCDDecode(b *testing.B) {
 
 func BenchmarkHexEncode(b *testing.B) {
 	enc := &hexEncoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(hexTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -92,8 +95,9 @@ func BenchmarkHexEncode(b *testing.B) {
 
 func BenchmarkHexDecode(b *testing.B) {
 	enc := &hexEncoder{}
+
 	data, _ := enc.Encode(hexTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)
@@ -103,7 +107,7 @@ func BenchmarkHexDecode(b *testing.B) {
 
 func BenchmarkASCIIEncode(b *testing.B) {
 	enc := &asciiEncoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(asciiTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -113,8 +117,9 @@ func BenchmarkASCIIEncode(b *testing.B) {
 
 func BenchmarkASCIIDecode(b *testing.B) {
 	enc := &asciiEncoder{}
+
 	data, _ := enc.Encode(asciiTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)
@@ -124,8 +129,9 @@ func BenchmarkASCIIDecode(b *testing.B) {
 
 func BenchmarkTLVEncode(b *testing.B) {
 	b.ReportAllocs()
+
 	enc := &tlvEncoder{}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := enc.Encode(tlvTestData)
 		if err != nil {
 			b.Fatal(err)
@@ -135,9 +141,11 @@ func BenchmarkTLVEncode(b *testing.B) {
 
 func BenchmarkTLVDecode(b *testing.B) {
 	b.ReportAllocs()
+
 	enc := &tlvEncoder{}
+
 	data, _ := enc.Encode(tlvTestData)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := enc.Decode(data)
 		if err != nil {
 			b.Fatal(err)

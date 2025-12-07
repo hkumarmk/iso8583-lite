@@ -1,3 +1,4 @@
+// Package parser provides utilities for parsing ISO8583 message buffers.
 package parser
 
 // Cursor represents a zero-copy position in the message buffer.
@@ -18,6 +19,7 @@ func (c Cursor) Extract(buf []byte) []byte {
 	if c.Start < 0 || c.End > len(buf) || c.Start >= c.End {
 		return nil
 	}
+
 	return buf[c.Start:c.End]
 }
 

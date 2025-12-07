@@ -22,9 +22,11 @@ func TestFieldType(t *testing.T) {
 			if got := tt.fieldType.String(); got != tt.wantString {
 				t.Errorf("String() = %v, want %v", got, tt.wantString)
 			}
+
 			if got := tt.fieldType.LengthIndicatorDigits(); got != tt.wantDigits {
 				t.Errorf("LengthIndicatorDigits() = %v, want %v", got, tt.wantDigits)
 			}
+
 			if got := tt.fieldType.IsVariable(); got != tt.wantVar {
 				t.Errorf("IsVariable() = %v, want %v", got, tt.wantVar)
 			}
@@ -111,19 +113,22 @@ func TestFieldSpec(t *testing.T) {
 	if spec.Number != 2 {
 		t.Errorf("Number = %v, want 2", spec.Number)
 	}
+
 	if spec.Name != "PrimaryAccountNumber" {
 		t.Errorf("Name = %v, want PrimaryAccountNumber", spec.Name)
 	}
+
 	if len(spec.Aliases) != 2 {
 		t.Errorf("len(Aliases) = %v, want 2", len(spec.Aliases))
 	}
+
 	if spec.Type != FieldTypeLL {
 		t.Errorf("Type = %v, want FieldTypeLL", spec.Type)
 	}
 }
 
 func TestSpecDefaults(t *testing.T) {
-	defaults := SpecDefaults{
+	defaults := FieldDefaults{
 		Encoding: EncodingASCII,
 		Padding:  PaddingLeft,
 		PadChar:  '0',
@@ -132,9 +137,11 @@ func TestSpecDefaults(t *testing.T) {
 	if defaults.Encoding != EncodingASCII {
 		t.Errorf("Encoding = %v, want ASCII", defaults.Encoding)
 	}
+
 	if defaults.Padding != PaddingLeft {
 		t.Errorf("Padding = %v, want Left", defaults.Padding)
 	}
+
 	if defaults.PadChar != '0' {
 		t.Errorf("PadChar = %v, want '0'", defaults.PadChar)
 	}
@@ -144,7 +151,7 @@ func TestSpec(t *testing.T) {
 	spec := &Spec{
 		Name:    "ISO 8583 v1987",
 		Version: "1.0",
-		Defaults: SpecDefaults{
+		Defaults: FieldDefaults{
 			Encoding: EncodingASCII,
 			Padding:  PaddingLeft,
 			PadChar:  '0',
@@ -172,9 +179,11 @@ func TestSpec(t *testing.T) {
 	if spec.Name != "ISO 8583 v1987" {
 		t.Errorf("Name = %v, want 'ISO 8583 v1987'", spec.Name)
 	}
+
 	if len(spec.Fields) != 2 {
 		t.Errorf("len(Fields) = %v, want 2", len(spec.Fields))
 	}
+
 	if spec.Fields[0].Name != "MessageTypeIndicator" {
 		t.Errorf("Fields[0].Name = %v, want MessageTypeIndicator", spec.Fields[0].Name)
 	}

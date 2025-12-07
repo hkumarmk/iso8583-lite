@@ -1,11 +1,16 @@
+//nolint:mnd // Magic numbers are acceptable in encoding algorithms
 package encoding
 
 import (
+	"errors"
 	"fmt"
 )
 
 var (
-	_   Encoder = (*bcdEncoder)(nil)
+	_ Encoder = (*bcdEncoder)(nil)
+
+	//nolint:gochecknoglobals // BCD is stateless and safe for concurrent use
+	// BCD is the Encoder for Binary Coded Decimal encoding and decoding.
 	BCD Encoder = &bcdEncoder{}
 )
 
@@ -24,26 +29,38 @@ var (
 // bcdEncoder implements Encoder for BCD (Binary Coded Decimal).
 type bcdEncoder struct{}
 
+const digitsPerByte = 2
+
+var errInvalidBCDDigit = errors.New("invalid BCD digit")
+
 // Encode encodes a digit string (ASCII bytes) into BCD bytes.
 // Odd-length input is left-padded with '0'.
 func (e *bcdEncoder) Encode(data []byte) ([]byte, error) {
-	n := len(data)
-	if n == 0 {
+	if len(data) == 0 {
 		return []byte{}, nil
 	}
-	if n%2 != 0 {
-		data = append([]byte{'0'}, data...)
-		n++
+
+	if len(data)%2 != 0 {
+		paddedData := make([]byte, len(data)+1)
+		paddedData[0] = '0'
+		copy(paddedData[1:], data)
+		data = paddedData
 	}
-	out := make([]byte, n/2)
-	for i := 0; i < n; i += 2 {
-		h := data[i]
-		l := data[i+1]
-		if h < '0' || h > '9' || l < '0' || l > '9' {
-			return nil, fmt.Errorf("invalid digit in BCD input: %q%q", h, l)
+
+	dataLength := len(data)
+
+	out := make([]byte, dataLength/digitsPerByte)
+	for idx := 0; idx < dataLength; idx += digitsPerByte {
+		high := data[idx]
+		low := data[idx+1]
+
+		if high < '0' || high > '9' || low < '0' || low > '9' {
+			return nil, fmt.Errorf("%w: %q%q", errInvalidBCDDigit, high, low)
 		}
-		out[i/2] = ((h - '0') << 4) | (l - '0')
+
+		out[idx/2] = ((high - '0') << 4) | (low - '0')
 	}
+
 	return out, nil
 }
 
@@ -52,16 +69,21 @@ func (e *bcdEncoder) Decode(data []byte) ([]byte, int, error) {
 	if len(data) == 0 {
 		return []byte{}, 0, nil
 	}
-	out := make([]byte, len(data)*2)
+
+	out := make([]byte, len(data)*digitsPerByte)
+
 	for i, b := range data {
 		h := (b >> 4) & 0x0F
 		l := b & 0x0F
+
 		if h > 9 || l > 9 {
-			return nil, i, fmt.Errorf("invalid BCD digit: 0x%X", b)
+			return nil, i, fmt.Errorf("%w: 0x%X", errInvalidBCDDigit, b)
 		}
-		out[i*2] = '0' + h
-		out[i*2+1] = '0' + l
+
+		out[i*digitsPerByte] = '0' + h
+		out[i*digitsPerByte+1] = '0' + l
 	}
+
 	return out, len(data), nil
 }
 

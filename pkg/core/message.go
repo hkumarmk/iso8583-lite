@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/hkumarmk/iso8583-lite/pkg/parser"
 	"github.com/hkumarmk/iso8583-lite/pkg/spec"
 )
@@ -34,6 +36,12 @@ type MessageReader interface {
 	ValidateField(fieldNum int) error
 }
 
+// mtiLength is the length of the Message Type Indicator field in bytes.
+const (
+	mtiLength        = 4
+	minMessageLength = 12 // Minimum length: MTI (4) + Primary Bitmap (8)
+)
+
 // Message represents a parsed ISO8583 message with zero-copy field access.
 type Message struct {
 	buf     []byte                // Raw message bytes
@@ -57,27 +65,28 @@ func NewMessage(buf []byte, s *spec.Spec) *Message {
 	}
 }
 
-// Parse parses the MTI, bitmap, and all present fields (eager parsing).
-// Returns an error if the message structure is invalid.
-// For full validation including format and business rules, use Validate() with appropriate validators.
+// Parse parses the MTI, bitmap, and all present fields in the ISO8583 message.
+// It validates the MTI structure and bitmap, and performs eager parsing of all fields.
 func (m *Message) Parse() error {
-	if len(m.buf) < 4 {
+	if len(m.buf) < mtiLength {
 		return ErrInvalidMTI(len(m.buf))
 	}
-	m.mti = string(m.buf[0:4])
+
+	m.mti = string(m.buf[0:mtiLength])
 
 	if !isValidMTIStructure(m.mti) {
 		return ErrInvalidMTIFormat(m.mti)
 	}
 
-	if len(m.buf) < 12 {
-		return ErrMessageTooShort(12, len(m.buf))
+	if len(m.buf) < minMessageLength {
+		return ErrMessageTooShort(minMessageLength, len(m.buf))
 	}
 
 	bitmap, _, err := NewBitmap(m.buf[4:])
 	if err != nil {
 		return ErrBitmapParseFailed(err)
 	}
+
 	m.bitmap = bitmap
 
 	// Eager parsing: Parse all present fields immediately
@@ -88,61 +97,16 @@ func (m *Message) Parse() error {
 	return nil
 }
 
-// parseAllFields eagerly parses all present fields and caches their cursors.
-func (m *Message) parseAllFields() error {
-	// Calculate starting offset after MTI and bitmap
-	offset := 4 // MTI
-	if m.bitmap.IsExtended() {
-		offset += 16
-	} else {
-		offset += 8
-	}
-
-	// Parse each present field in order
-	for _, fieldNum := range m.bitmap.PresentFields() {
-		// Skip field 1 (bitmap itself)
-		if fieldNum == 1 {
-			continue
-		}
-
-		// Skip if field not in spec
-		if _, ok := m.spec.Fields[fieldNum]; !ok {
-			continue
-		}
-
-		// Parse field to get cursor
-		cursor, err := m.parser.ParseField(m.buf, fieldNum, offset)
-		if err != nil {
-			return err
-		}
-
-		// Cache the cursor
-		m.cursors[fieldNum] = cursor
-
-		// Move to next field
-		offset = cursor.NextOffset()
-	}
-
-	return nil
-}
-
-// isValidMTIStructure checks that MTI is 4 numeric ASCII digits.
-func isValidMTIStructure(mti string) bool {
-	if len(mti) != 4 {
-		return false
-	}
-	for i := range 4 {
-		if mti[i] < '0' || mti[i] > '9' {
-			return false
-		}
-	}
-	return true
-}
-
+// MTI returns the Message Type Indicator field accessor.
+//
+//nolint:ireturn // Returning interface for extensibility is intentional
 func (m *Message) MTI() FieldAccessor {
 	return NewField([]byte(m.mti), m.mti != "")
 }
 
+// Field returns the accessor for the specified field number.
+//
+//nolint:ireturn // Returning interface for extensibility is intentional
 func (m *Message) Field(fieldNum int) FieldAccessor {
 	if fieldNum < 0 || fieldNum > 128 {
 		return NewField(nil, false)
@@ -176,26 +140,33 @@ func (m *Message) Field(fieldNum int) FieldAccessor {
 	return NewFieldWithSpec(data, true, fieldSpec, m.parser)
 }
 
+// HasField returns true if the specified field is present in the message.
 func (m *Message) HasField(fieldNum int) bool {
 	if fieldNum == 0 {
 		return true
 	}
+
 	if m.bitmap == nil {
 		return false
 	}
+
 	return m.bitmap.IsSet(fieldNum)
 }
 
+// Bytes returns the raw ISO8583 message bytes.
 func (m *Message) Bytes() []byte {
 	return m.buf
 }
 
+// PresentFields returns all present field numbers, including the MTI (field 0).
 func (m *Message) PresentFields() []int {
 	if m.bitmap == nil {
 		return []int{0}
 	}
+
 	fields := []int{0} // Start with MTI
 	fields = append(fields, m.bitmap.PresentFields()...)
+
 	return fields
 }
 
@@ -212,22 +183,80 @@ func (m *Message) PresentFields() []int {
 //	if err := msg.Validate(validator); err != nil {
 //	    // Handle validation error
 //	}
+//
+//nolint:wrapcheck // Allow direct error return from validator
 func (m *Message) Validate(validator Validator) error {
 	if m.bitmap == nil {
 		return &MessageError{Message: "message not parsed, call Parse() first"}
 	}
+
 	if validator == nil {
 		return nil
 	}
+
 	return validator.Validate(m)
 }
 
 // ValidateField validates a specific field.
-// TODO: Implement once Spec is available
+// TODO: Implement once Spec is available.
 func (m *Message) ValidateField(fieldNum int) error {
 	// Field-level validation will be implemented with Spec support
 	if !m.HasField(fieldNum) {
 		return ErrFieldNotPresent
 	}
+
 	return nil
+}
+
+// parseAllFields eagerly parses all present fields and caches their cursors.
+func (m *Message) parseAllFields() error {
+	// Calculate starting offset after MTI and bitmap
+	offset := 4 // MTI
+	if m.bitmap.IsExtended() {
+		offset += 16
+	} else {
+		offset += 8
+	}
+
+	// Parse each present field in order
+	for _, fieldNum := range m.bitmap.PresentFields() {
+		// Skip field 1 (bitmap itself)
+		if fieldNum == 1 {
+			continue
+		}
+
+		// Skip if field not in spec
+		if _, ok := m.spec.Fields[fieldNum]; !ok {
+			continue
+		}
+
+		// Parse field to get cursor
+		cursor, err := m.parser.ParseField(m.buf, fieldNum, offset)
+		if err != nil {
+			return fmt.Errorf("failed to parse field %d: %w", fieldNum, err)
+		}
+
+		// Cache the cursor
+		m.cursors[fieldNum] = cursor
+
+		// Move to next field
+		offset = cursor.NextOffset()
+	}
+
+	return nil
+}
+
+// isValidMTIStructure checks that MTI is 4 numeric ASCII digits.
+func isValidMTIStructure(mti string) bool {
+	if len(mti) != mtiLength {
+		return false
+	}
+
+	for i := range mtiLength {
+		if mti[i] < '0' || mti[i] > '9' {
+			return false
+		}
+	}
+
+	return true
 }

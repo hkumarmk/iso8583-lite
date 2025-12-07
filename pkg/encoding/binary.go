@@ -4,7 +4,10 @@ package encoding
 type binaryEncoder struct{}
 
 var (
-	_      Encoder = (*binaryEncoder)(nil)
+	_ Encoder = (*binaryEncoder)(nil)
+
+	//nolint:gochecknoglobals // Binary is stateless and safe for concurrent use
+	// Binary is the default Encoder for raw binary data.
 	Binary Encoder = &binaryEncoder{}
 )
 
@@ -13,8 +16,10 @@ func (e *binaryEncoder) Encode(data []byte) ([]byte, error) {
 	if data == nil {
 		return []byte{}, nil
 	}
+
 	out := make([]byte, len(data))
 	copy(out, data)
+
 	return out, nil
 }
 
@@ -23,8 +28,10 @@ func (e *binaryEncoder) Decode(data []byte) ([]byte, int, error) {
 	if data == nil {
 		return []byte{}, 0, nil
 	}
+
 	out := make([]byte, len(data))
 	copy(out, data)
+
 	return out, len(data), nil
 }
 

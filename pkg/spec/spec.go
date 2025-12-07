@@ -1,3 +1,4 @@
+// Package spec defines the ISO8583 message specification, field types, encodings, and related structures.
 package spec
 
 // Spec defines the complete ISO8583 message specification.
@@ -5,12 +6,12 @@ package spec
 type Spec struct {
 	Name     string
 	Version  string
-	Defaults SpecDefaults
+	Defaults FieldDefaults
 	Fields   map[int]*FieldSpec
 }
 
-// SpecDefaults defines default values for fields in a spec.
-type SpecDefaults struct {
+// FieldDefaults defines default values for fields in a spec.
+type FieldDefaults struct {
 	Encoding EncodingType
 	Padding  PaddingType
 	PadChar  rune
@@ -52,12 +53,13 @@ type FieldSpec struct {
 // See docs/decisions/adr-001-field-type-enum.md for full rationale.
 type FieldType int
 
+// FieldType enum values.
 const (
-	FieldTypeFixed  FieldType = iota
-	FieldTypeL                // Variable with 1-digit length indicator
-	FieldTypeLL               // Variable with 2-digit length indicator
-	FieldTypeLLL              // Variable with 3-digit length indicator
-	FieldTypeBitmap           // Bitmap field (special handling)
+	FieldTypeFixed  FieldType = iota // Fixed-length field
+	FieldTypeL                       // Variable with 1-digit length indicator
+	FieldTypeLL                      // Variable with 2-digit length indicator
+	FieldTypeLLL                     // Variable with 3-digit length indicator
+	FieldTypeBitmap                  // Bitmap field (special handling)
 )
 
 // String returns the string representation of FieldType.
@@ -74,13 +76,14 @@ func (ft FieldType) String() string {
 	case FieldTypeBitmap:
 		return "Bitmap"
 	default:
-		return "Unknown"
+		return "UnknownFieldType"
 	}
 }
 
 // DataType defines the data type of field content.
 type DataType int
 
+// DataType enum values.
 const (
 	DataTypeNumeric DataType = iota
 	DataTypeAlpha
@@ -103,13 +106,14 @@ func (dt DataType) String() string {
 	case DataTypeBinary:
 		return "Binary"
 	default:
-		return "Unknown"
+		return "UnknownDataType"
 	}
 }
 
 // EncodingType defines the encoding format for field data.
 type EncodingType int
 
+// EncodingType enum values.
 const (
 	EncodingASCII EncodingType = iota
 	EncodingEBCDIC
@@ -129,13 +133,14 @@ func (et EncodingType) String() string {
 	case EncodingBinary:
 		return "Binary"
 	default:
-		return "Unknown"
+		return "UnknownEncoding"
 	}
 }
 
 // PaddingType defines how fields should be padded.
 type PaddingType int
 
+// PaddingType enum values.
 const (
 	PaddingNone PaddingType = iota
 	PaddingLeft
@@ -155,11 +160,13 @@ func (pt PaddingType) String() string {
 	case PaddingCenter:
 		return "Center"
 	default:
-		return "Unknown"
+		return "UnknownPaddingType"
 	}
 }
 
 // LengthIndicatorDigits returns the number of digits in the length indicator.
+//
+//nolint:exhaustive,mnd // We only care about L, LL, LLL here
 func (ft FieldType) LengthIndicatorDigits() int {
 	switch ft {
 	case FieldTypeL:

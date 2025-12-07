@@ -1,13 +1,21 @@
 package encoding
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	_ Encoder = (*asciiEncoder)(nil)
 
 	//nolint:gochecknoglobals // ASCII is stateless and safe for concurrent use
+	// ASCII is the default Encoder for ASCII encoding and decoding.
 	ASCII Encoder = &asciiEncoder{}
 )
+
+const asciiMaxByte = 0x7F
+
+var errNonASCIIByte = errors.New("non-ASCII byte")
 
 // asciiEncoder implements Encoder for ASCII encoding.
 type asciiEncoder struct{}
@@ -15,10 +23,11 @@ type asciiEncoder struct{}
 func (e *asciiEncoder) Encode(data []byte) ([]byte, error) {
 	// ASCII encoding is a no-op for valid ASCII bytes
 	for _, b := range data {
-		if b > 0x7F {
-			return nil, fmt.Errorf("non-ASCII byte: 0x%X", b)
+		if b > asciiMaxByte {
+			return nil, fmt.Errorf("%w: 0x%X", errNonASCIIByte, b)
 		}
 	}
+
 	out := make([]byte, len(data))
 	copy(out, data)
 
@@ -28,8 +37,8 @@ func (e *asciiEncoder) Encode(data []byte) ([]byte, error) {
 func (e *asciiEncoder) Decode(data []byte) ([]byte, int, error) {
 	// ASCII decoding is a no-op for valid ASCII bytes
 	for _, b := range data {
-		if b > 0x7F {
-			return nil, 0, fmt.Errorf("non-ASCII byte: 0x%X", b)
+		if b > asciiMaxByte {
+			return nil, 0, fmt.Errorf("%w: 0x%X", errNonASCIIByte, b)
 		}
 	}
 

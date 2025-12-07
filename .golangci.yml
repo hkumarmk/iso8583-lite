@@ -1,0 +1,225 @@
+version: "2"
+
+run:
+  go: "1.25"
+  timeout: 5m
+  tests: true
+
+output:
+  formats:
+    text:
+      colors: true
+      print-issued-lines: true
+
+linters:
+  default: all
+  enable:
+    - errcheck         # To ensure that errors are handled
+    - govet            # Vet examines Go source code and reports suspicious constructs
+    - ineffassign      # Detects when assignments to existing variables are not used
+    - staticcheck      # Various static analysis checks
+    - unused           # Checks Go code for unused constants, variables, functions and types
+    - asasalint        # Checks for the presence of 'any' type in variadic functions
+    - asciicheck       # Ensures that all code identifiers use only ASCII characters
+    - bidichk          # Detects dangerous Unicode character sequences
+    - bodyclose        # Checks if HTTP response bodies are closed correctly
+    - canonicalheader  # Ensures net/http.Header uses canonical header names
+    - containedctx     # Detects struct fields that contain context.Context
+    - contextcheck     # Ensures that functions use a non-inherited context
+    - copyloopvar      # Detects places where loop variables are copied
+    - cyclop           # Checks for high cyclomatic complexity in functions and packages
+    - decorder         # Enforces a specific declaration order and count for types, constants, variables, and functions
+    - dogsled          # Detects assignments with too many blank identifiers
+    - dupl             # Tool for detecting code duplication
+    - dupword          # Checks for duplicate words in the source code
+    - durationcheck    # Checks for multiplication of two durations
+    - embeddedstructfieldcheck  # Embedded types at top of struct with empty line separator
+    - err113           # Check errors handling expressions
+    - errchkjson       # Validates types passed to JSON encoding functions
+    - errname          # Ensures sentinel errors are correctly named
+    - errorlint        # Find code issues with error wrapping scheme from Go 1.13
+    - exhaustive       # Check exhaustiveness of enum switch statements
+    - exptostd         # Detects x/exp functions that can be replaced by std functions
+    - fatcontext       # Detects nested contexts in loops
+    - forbidigo        # Forbids the use of certain identifiers
+    - forcetypeassert  # Finds forced type assertions
+    - funlen           # Detects overly long functions
+    - gocheckcompilerdirectives  # Validates Go compiler directive comments
+    - gochecknoglobals  # Checks for the existence of global variables
+    - gochecknoinits   # Ensures no init functions are present in Go code
+    - gochecksumtype   # Runs exhaustiveness checks on Go "sum types"
+    - gocognit         # Computes and checks the cognitive complexity of functions
+    - goconst          # Detects repeated strings that could be replaced by constants
+    - gocritic         # Extensible linter for checking bugs, performance, and style issues
+    - gocyclo          # Computes and checks the cyclomatic complexity of functions
+    - godoclint        # Checks Golang's documentation practice (godoc)
+    - godot            # Check if comments end in a period
+    # - godox          # Detects todo, fix, and other comment keywords - disabled until Spec implementation
+    - goheader         # Ensures file headers match a specified pattern
+    - gomoddirectives  # Manages 'replace', 'retract', and 'excludes' directives in go.mod
+    - gomodguard       # Blocklist linter for direct Go module dependencies
+    - goprintffuncname # Ensures printf-like functions are named with an 'f' at the end
+    - gosec            # Inspects source code for security issues
+    - gosmopolitan     # Reports certain i18n/l10n anti-patterns in Go codebases
+    - grouper          # Analyzes expression groups for consistency
+    - importas         # Enforces consistent import aliases
+    - inamedparam      # Reports interfaces with unnamed method parameters
+    - ineffassign      # Detects when assignments to existing variables are not used
+    - intrange         # Find places where for loops could use integer range
+    - interfacebloat   # Checks the number of methods in an interface to avoid bloat
+    - iotamixing       # Checks if iotas are mixed with other non-iota declarations
+    - ireturn          # Recommends accepting interfaces and returning concrete types
+    - lll              # Reports long lines in code
+    - loggercheck      # Checks key-value pairs for logger libraries
+    - maintidx         # Measures the maintainability index of each function
+    - makezero         # Detects slice declarations with non-zero initial length
+    - mirror           # Reports incorrect mirror patterns of byte/string usage
+    - misspell         # Detects commonly misspelled words in code comments
+    - mnd              # Reports magic numbers
+    - musttag          # Enforces field tags in marshaled/unmarshaled structs
+    - nakedret         # Checks that naked return statements are not overly long
+    - nestif           # Reports deeply nested if statements
+    - nilerr           # Finds code that incorrectly returns nil
+    - nilnil           # Ensures no simultaneous return of nil error and invalid value
+    - nlreturn         # Checks for a new line before return and branch statements
+    - noctx            # Detects HTTP requests without context.Context
+    - nilnesserr       # Detects redundant nil checks
+    - nolintlint       # Reports ill-formed or insufficient nolint directives
+    - nonamedreturns   # Reports all named returns
+    - nosprintfhostport # Checks for misuse of Sprintf to construct a URL with host and port
+    - perfsprint       # Suggests faster alternatives to fmt.Sprintf
+    - prealloc         # Finds slice declarations that could be pre-allocated
+    - predeclared      # Detects code that shadows Go's predeclared identifiers
+    - promlinter       # Checks Prometheus metrics naming via promlint
+    - protogetter      # Detects direct reads from proto message fields instead of using getters
+    - reassign         # Ensures package variables are not reassigned
+    - revive           # Linter that replaces golint with more features
+    - rowserrcheck     # Ensures Rows.Err is checked in SQL queries
+    - sloglint         # Ensure consistent code style when using log/slog
+    - sqlclosecheck    # Ensures SQL-related objects are properly closed
+    - tagalign         # Ensures struct tags are well aligned
+    - tagliatelle      # Checks struct tags for correctness
+    - testableexamples # Linter checks if examples are testable (have an expected output)
+    - testifylint      # Checks usage of testify library
+    - thelper          # Detects test helpers that don't start with t.Helper()
+    - tparallel        # Detects inappropriate usage of t.Parallel() in Go tests
+    - unconvert        # Removes unnecessary type conversions
+    - unparam          # Reports unused function parameters
+    - usestdlibvars    # Detects opportunities to use standard library variables/constants
+    - wastedassign     # Finds wasted assignment statements
+    - whitespace       # Checks for unnecessary newlines at the start and end of functions
+    - wrapcheck        # Ensures errors from external packages are wrapped
+    - wsl_v5           # Adds or removes empty lines as needed
+    - zerologlint      # Detects incorrect usage of zerolog logging
+    - funcorder        # Checks that functions are declared in a consistent order
+    - iface            # Reports when a concrete type is used instead of an interface
+    - recvcheck        # Detects unnecessary use of pointer receivers
+    - spancheck        # Checks for mistakes with OpenTelemetry/Census spans
+  disable:
+    - godox            # Detects todo, fix, and other comment keywords
+    - noinlineerr      # Detects inlined error variables
+    - paralleltest     # Detects tests that can be run in parallel
+    - varnamelen       # Disabled due to frequent false positives in test files
+    - wsl              # Disabled in favor of wsl_v5
+    - testpackage      # Disabled to allow internal package tests
+    - exhaustruct      # Disabled due to complexity in struct initialization
+    - depguard        # Disabled to allow certain dependencies
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - cyclop
+          - gocyclo
+          - containedctx
+          - errcheck
+          - dupl
+          - gocognit
+          - gosec
+          - funlen
+          - wsl_v5
+          - gochecknoglobals
+          - varnamelen
+          - lll
+          - forcetypeassert
+          - wrapcheck
+          - goconst
+          - bodyclose
+          - ireturn
+          - noctx
+          - unparam
+          - prealloc
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+
+    dupl:
+      threshold: 100
+    
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - unnamedResult
+    
+    gocyclo:
+      min-complexity: 15
+    
+    gocognit:
+      min-complexity: 15
+    
+    misspell:
+      locale: US
+    
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      require-specific: true
+    
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+    
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+    
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+    
+    varnamelen:
+      ignore-names:
+        - err
+        - tt
+        - id
+        - tc
+        - ok
+        - wg
+        - i
+        - j
+        - k
+        - v
+        - b
+      ignore-decls:
+        - t testing.T
+        - e error
+        - n int
+        - const C
+        - T any
+formatters:
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/hkumarmk/iso8583-lite
