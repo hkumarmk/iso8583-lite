@@ -1,0 +1,46 @@
+{
+  // Go Language Server
+  "go.useLanguageServer": true,
+  "gopls": {
+    "ui.semanticTokens": true,
+    "ui.completion.usePlaceholders": true
+  },
+
+  // Use system Go from PATH (1.25.5)
+  "go.goroot": "",
+  "go.toolsGopath": "",
+
+  // Testing
+  "go.testFlags": ["-v", "-race"],
+  "go.coverOnSave": false,
+  "go.coverOnTestPackage": true,
+
+  // Formatting and linting
+  "go.formatTool": "goimports",
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["run"],
+  "go.lintOnSave": "package",
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // Build tags
+  "go.buildTags": "",
+  "go.testTags": "",
+
+  // Performance
+  "go.useLanguageServer": true,
+  "gopls.analyses": {
+    "unusedparams": true,
+    "shadow": true
+  },
+
+  // File associations
+  "files.associations": {
+    "go.mod": "go.mod",
+    "go.sum": "go.sum"
+  }
+}
